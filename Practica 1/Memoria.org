@@ -1,0 +1,602 @@
+#+options: toc:nil
+#+BIND: org-latex-image-default-width 0.5\linewidth
+#+TITLE: Filtrado y detección de regiones.
+#+AUTHOR: Luis Antonio Ortega Andrés
+#+LANGUAGE: es
+#+LATEX_HEADER:\setlength{\parindent}{0in}
+#+LATEX_HEADER: \usepackage[margin=0.8in]{geometry}
+#+LATEX_HEADER: \usepackage[spanish]{babel}
+#+LATEX_HEADER: \usepackage{mathtools}
+#+latex_class_options: [11pt]
+#+LaTeX_HEADER: \usepackage[left=1in,top=1in,right=1in,bottom=1.5in]{geometry}
+#+LaTeX_HEADER: \usepackage{palatino}
+#+LaTeX_HEADER: \usepackage{fancyhdr}
+#+LaTeX_HEADER: \usepackage{sectsty}
+#+LaTeX_HEADER: \usepackage{engord}
+#+LaTeX_HEADER: \usepackage{cite}
+#+LaTeX_HEADER: \usepackage{graphicx}
+#+LaTeX_HEADER: \usepackage{setspace}
+#+LaTeX_HEADER: \usepackage[compact]{titlesec}
+#+LaTeX_HEADER: \usepackage[center]{caption}
+#+LaTeX_HEADER: \usepackage{placeins}
+#+LaTeX_HEADER: \usepackage{color}
+#+LaTeX_HEADER: \usepackage{amsmath}
+#+LaTeX_HEADER: \usepackage{pdfpages}
+
+
+* Introducción
+
+La memoria se encuentra estructurada en tres apartados, el primero corresponde
+al bonus 1, ya que el resto de ejercicios utilizan las funciones de convolución
+declaradas en este apartado.
+
+En el siguiente apartado tenemos los ejercicios propuestos y en el último
+apartado el bonus 2.\\
+
+A lo largo de la memoria se incluirán imágenes mostrando los resultados de forma
+que no sea necesario ejecutar las funciones de ejemplo para verlos, aun así, se
+nombrará la función que muestra dicho resultado en caso de querer ejecutarla.\\
+
+Para el desarrollo de esta práctica he utilizado funciones definidas en la
+práctica 0 para mostrar las imágenes. Además he definido una serie de funciones
+auxiliares que se utilizarán en los distintos ejercicios de la práctica, estas son:
+- ~GBRtoRGB~. Cambia la codificación de color de una imagen.
+- ~isBW.~ Comprueba si una imagen está en blanco y negro.
+- ~normalize.~ Normaliza los valores de una imagen, poniendo el máximo a 1.0 y
+  el mínimo a 0.
+- ~hstack.~ Compone un vector de imágenes en horizontal y lo devuelve.
+- ~vstack.~ Compone un vector de imágenes en vertical y lo devuelve.
+
+* Bonus 1
+En este apartado explicaré como se han construido las funciones encargadas de
+añadir bordes a una imagen y hacer la convolución con kernels 1D y 2D.
+** Función bordes
+
+La función que nos permitirá añadir un borde a una imagen se llama
+~make_border~, tiene los siguientes parámetros.
+
++ ~img~. La imagen a la que añadir el borde.
++ ~tamx~. Tamaño del borde en el eje ~X~.
++ ~tamy~. Tamaño del borde en el eje ~Y~. En caso de ser ~0~ se utiliza el mismo que ~tam_x~.
++ ~tipo~. Indica el tipo de borde que se quiere añadir.
+  + *0.* Borde constante segun el valor de ~value~, por defecto ~0~.
+  + *1.* Se creará un borde reflejando la parte final de la imagen. Por ejemplo, la imagen ~abc~, resultaría en ~cba|abc|cba~
+  + *2.* Se creará un borde replicando la parte final de la imagen. Por ejemplo, lla imagen ~abc~, resultaría ~aaa|abc|ccc~
++ ~value~. Color del borde tipo ~0~.
+
+Llamando a la función ~ejemplo_make_border~ obtenemos las siguientes imágenes de ejemplo.
+
+#+Caption: Borde constante | Borde reflejado | Borde replicado.
+[[./samples/ejemplo_make_border.png]]
+
+En todas dejamos las esquinas sin alterar ya que no entrán en el cálculo de la convolución.
+
+** Función de convolución
+
+Declaramos una función que calculará la convolución de dos vectores de forma
+manual. Esta recorrerá cada uno de los elementos del vector y calculará el nuevo
+valor que corresponde a su posición. Debido a la baja eficiencia de esta
+función, solo la utilizaré en el apartado correspondiente a máscaras 2D
+separables de este bonus, en el resto de apartados de la práctica utilizaré ~numpy.convolve~.
+
+#+BEGIN_SRC python
+def m_convolve(v, k):
+    k = k[::-1]
+    l = len(k)//2
+    aux = np.copy(v)
+    for i in range(l, len(v)-l):
+        aux2 = 0
+        for j in range(-l, l+1):
+            if (i + j >= 0 and i+j < len(v)):
+                aux2 += v[i+j]*k[j+l]
+        aux[i] = aux2
+    return aux
+#+END_SRC
+
+*** Convolución por vectores 1D
+Declaramos la función que calculará la convolución de una imagen monobanda. Para
+ello necesitamos los siguientes pámetros:
+
+- ~img~. La imagen sobre la que aplicar la convolución.
+- ~vx~. El vector de convolución en el eje ~x~.
+- ~vy~. El vector de convolución en el eje ~y~.
+
+Para calcular la convolución 2D, aplicamos la convolución 1D a cada fila y cada
+columna de la imagen. Utilizando el frag ~same~ en la convolución implementada
+en ~numpy~ nos aseguramos que el vector que devuelva tenga la misma dimensión
+que el que le hemos pasado (contiene los bordes), por ello devolvemos una
+sub-matriz al final. Podemos ver su implementación aquí.
+
+#+begin_src python
+def convolucion2D_monobanda(img, vx, vy, border_type = 2, value = 0, manual=False):
+    nrows = img.shape[0]
+    ncols = img.shape[1]
+    kx = len(vx) // 2
+    ky = len(vy) // 2
+    img_res = make_border(img, kx, ky, border_type, value)
+    for i in range(0, nrows + 2 * ky):
+        if (manual):
+            img_res[i] = m_convolve(img_res[i], vx)
+        else:
+            img_res[i] = np.convolve(img_res[i], vx, "same")
+    for j in range(0, ncols + 2 * kx):
+        if (manual):
+            img_res[:,j] = m_convolve(img_res[:,j], vy)
+        else:
+            img_res[:,j] = np.convolve(img_res[:,j], vy, "same")
+    return img_res[ky:-ky, kx:-kx].astype("float32")
+#+end_src
+
+La funciñón ~convolucion2D~ nos permitirá hacer la
+convolución de una imagen a color, llamando a la anterior sobre cada color de
+la imagen.
+
+En la función ~ejemplo_convolucion()~ probamos tanto el caso blanco y negro como
+el caso a color. Podemos observar los resultados en las figuras [[fig:c1]] y [[fig:c2]].
+
+#+Caption: Ejemplo convolución blanco y negro.
+#+label: fig:c1
+[[./samples/ejemplo_convolucion1.png]]
+#+Caption: Ejemplo convolución a color
+#+label: fig:c2
+[[./samples/ejemplo_convolucion2.png]]
+
+*** Convolución por matriz 2D
+La función ~convolucion2D_m~ nos permitirá hacer la convolución de la imagen con un kernel 2D separable. Los pasos seguidos por la función son:
+1. Comprobar que el rango de la matriz es ~1~. En otro caso no se puede hacer la separación.
+2. Buscamos una fila y una columna no nulas. Deben existir por ser la matriz de
+   rango 1. Además el resto de filas y columnas será proporcionales a estas.
+3. Estos vectores serán los kernels 1D salvo una constante de proporcionalidad.
+   Construimos la matriz resultante de multiplicar estos vectores y la dividimos
+   entre la original. Así tenemos la constante.
+4. Realizamos la convolución vista antes con estos vectores.
+
+En la función ~ejemplo_bonus1~ utilizamos una matriz de suavizado constante
+~1/81~, podemos ver el resultado en la figura [[fig:sep]].
+
+#+Caption: Ejemplo convolución con máscara 2D separable.
+#+label: fig:sep
+#+attr_latex: :width 250px
+[[./samples/ejemplo_convolucion2D.png]]
+
+* Ejercicios
+** Ejercicio 1
+*** Apartado A
+En este ejercicio se nos pide calcular la convolución de una imagen con una
+máscara 2D Gaussiana. Para calcular el kernel Gaussiano, calcularemos aquellos
+valores que lo componen. Para ello declaramos la función de densidad de la distribución Gaussiana de media ~0~ y \sigma un valor pasado por parámetro.
+
+No tenemos en cuenta el denominador de la función ya que luego vamos a
+normalizar los vectores.
+
+#+Begin_src python
+def gaussian(x, sig):
+    return np.exp(-np.power(x, 2.) / (2 * np.power(sig, 2.)))
+#+END_SRC
+
+Ayudandonos de esta función calculamos los kernels 1D, para ello seguimos los siguientes pasos:
+1. Calculamos aquellos valores enteros en $[-3\sigma, 3\sigma]$.
+2. Insertamos la imagen por la función Gaussiana de estos valores en un vector.
+3. Normalizamos el vector, de forma que la suma de las componentes es 1. Esto
+   además nos permitirá no tener que ajustar el resultado de la Laplaciana-de-Gaussiana
+   multiplicando por \sigma^2.
+
+En la función ~gaussiana(img, sx, sy=0, tamx = 0, tamy = 0)~ calculará la convolución de ~img~ con los vectores 1D. Cos los parámetros podremos ajustar lo siguiente.
+- Si ~sy = 0~, entonces ~sy = sx~.
+- Si ~tamx~ o ~tamy~ no son nulos, entonces se eligen como el tamaño del kernel
+  1D correspondiente.
+  Veamos ahora algunos ejemplos (figuras [[fig:g1]], [[fig:g2]], [[fig:g3]] y [[fig:g4]]) donde aplicamos el filtro gaussiano a una imagen de muestra, estos resultados se pueden ver tambien ejecutando la función ~ejemplo_gaussiana~.
+
+#+Caption: Original | \sigma = 3 | \sigma = 15
+#+LABEL: fig:g1
+[[./samples/ejemplo_gaussiana1.png]]
+
+#+Caption: Original | \sigma_x = 1 \sigma_y = 5| \sigma_x = 5  \sigma_y = 1
+#+LABEL: fig:g2
+[[./samples/ejemplo_gaussiana2.png]]
+
+#+Caption: Original | \sigma = 15, tam = 3 | \sigma = 15, tam = 5
+#+LABEL: fig:g3
+[[./samples/ejemplo_gaussiana3.png]]
+
+#+Caption: Borde constante | Borde reflejado | Borde replicado.
+#+LABEL: fig:g4
+[[./samples/ejemplo_gaussiana4.png]]
+
+Podemos observar lo siguiente:
++ En la figura [[fig:g1]] mayor valor de $\sigma$, mayor difuminación se produce en la imagen.
++ También podemos observar en la figura [[fig:g2]] como en caso de ser distintos
+  $\sigma_X$ y $\sigma_Y$, entonces se produce cierta deformación en el sentido del mayor de ellos.
++ Con la figura [[fig:g3]] tambien se puede observar que si el tamaño del kernel es
+  demasiado pequeño, el efecto del filtro se ve reducido.
++ En la figura [[fig:g4]] podemos ver los resultados de utilizar distintos tipos de
+  bordes al realizar el suavizado. Como se puede observar al utilizar el borde
+  constante, este se extiende a la imagen y aparece en el resultado final. Esto
+  también ocurre si utilizamos funciones de opencv para aplicar el suavizado. Sin
+  embargo, no se aprecia diferencia entre usar el borde reflejado o el replicado.
+
+En el ejercicio también se nos pide calcular máscaras 1D resultantes de llamar a
+~getDerivKernels~. Para ello, declaramos una función ~derivadas~ que hará una llamada
+con los parámetros correspondientes y el flag ~normalize=true~, así los vectores
+ya estarán normalizados.\\
+La función ~ejemplo_vectores_derivadas~ nos mostrará por pantalla las derivadas
+de primer y segundo orden de tamaños 3 y 5. Siendo estas:
+
+#+begin_src python
+
+Tamaño = 3
+  (0, 1): [[0.25 0.5  0.25]], [[-0.5  0.   0.5]]
+  (0, 2): [[0.25 0.5  0.25]], [[ 1. -2.  1.]]
+  (1, 0): [[-0.5  0.   0.5]], [[0.25 0.5  0.25]]
+  (1, 1): [[-0.5  0.   0.5]], [[-0.5  0.   0.5]]
+  (1, 2): [[-0.5  0.   0.5]], [[ 1. -2.  1.]]
+  (2, 0): [[ 1. -2.  1.]], [[0.25 0.5  0.25]]
+  (2, 1): [[ 1. -2.  1.]], [[-0.5  0.   0.5]]
+  (2, 2): [[ 1. -2.  1.]], [[ 1. -2.  1.]]
+Tamaño = 5
+  (0, 1): [[0.0625 0.25   0.375  0.25   0.0625]],
+  [[-0.125 -0.25   0.     0.25   0.125]]
+  (0, 2): [[0.0625 0.25   0.375  0.25   0.0625]],
+  [[ 0.25  0.   -0.5   0.    0.25]]
+  (1, 0): [[-0.125 -0.25   0.     0.25   0.125]],
+  [[0.0625 0.25   0.375  0.25   0.0625]]
+  (1, 1): [[-0.125 -0.25   0.     0.25   0.125]],
+  [[-0.125 -0.25   0.     0.25   0.125]]
+  (1, 2): [[-0.125 -0.25   0.     0.25   0.125]],
+  [[ 0.25  0.   -0.5   0.    0.25]]
+  (2, 0): [[ 0.25  0.   -0.5   0.    0.25]],
+  [[0.0625 0.25   0.375  0.25   0.0625]]
+  (2, 1): [[ 0.25  0.   -0.5   0.    0.25]],
+  [[-0.125 -0.25   0.     0.25   0.125]]
+  (2, 2): [[ 0.25  0.   -0.5   0.    0.25]],
+  [[ 0.25  0.   -0.5   0.    0.25]]
+#+end_src
+
+#+RESULTS:
+
+Probamos estos kernels 1D en la función ~ejemplo_derivadas~, donde usamos la
+imagen del pájaro donde es mas fácil apreciar el contorno de la figura. Figura [[fig:d1]].
+
+#+Caption: \partial_y con tamaño 3 | \partial_x con tamaño 3 | \partial_yy con tamaño 3 | \partial_yy con tamaño 7
+#+label: fig:d1
+[[./samples/ejemplo_derivadas.png]]
+
+Podemos observar las diferencias entre derivar sobre una variable u otra, el orden de la
+derivada y el tamaño de la máscara.
+
+Por ejemplo, aplicar la derivada sobre una variable u otra, afecta en la
+dirección en la que se calcula la derivada de la imagen. Siendo en uno de los
+casos horizontal y en el otro vertical.
+
+Veamos que significado tiene hacer derivadas de primer y segundo orden con
+tamaño 3, el caso de tamaño 5 sigue la misma idea utilizando píxeles mas lejanos.
+
++ Cuando hacemos una derivada de primer orden, estamos aproximando el valor de
+  la derivada por
+  $$
+  \lim_{\varepsilon \to 0} \frac{f(x+\varepsilon)-
+  f(x-\varepsilon)}{\varepsilon} \approx f(x+1) - f(x-1)
+  $$
+  Así, mostramos las diferencias que hay entre el pixel anterior y el siguiente.
+  De forma que mostramos los cambios en la imagen.
+
++ Cuando hacemos una derivada de segundo orden la aproximación es de la forma
+  $$
+  \lim_{\varepsilon \to 0} \frac{f'(x +\varepsilon) -
+  f'(x-\varepsilon)}{\varepsilon} \approx (f(x+1) - f(x)) - (f(x) - f(x-1))=
+  $$
+  $$
+  f(x+1) - 2f(x) + f(x-1)
+  $$
+  Con esto, los cambios que se muestran deben ser más bruscos, ya que cambios
+  monótonos tendrán un valor de 0.
+
+*** Apartado B
+En este apartado se nos pide calcular la convolución 2D con una máscara
+normalizada de Laplaciana-de-Gaussiana de tamaño variable.
+
+Para ello definimos la función ~laplaciano~. Nos aprovechamos de que las máscaras
+de derivadas respecto al eje ~x~ son las mismas que las del eje ~y~ alterando el
+orden de los vectores. De esta forma sólo tenemos que calcular una de ellas.
+
+#+BEGIN_SRC python
+def laplaciano(im, s, tam = 0, border = 2, value = 0):
+    g = gaussiana(im, s, tamx = tam, border_type = border, value=value)
+    d = derivadas(2, 0, tam)
+    g1 = convolucion2D(g, d[0].T[0], d[1].T[0], border_type = border,
+                       value = value)
+    g2 = convolucion2D(g, d[1].T[0], d[0].T[0], border_type = border,
+                       value = value)
+    return abs(g1+g2)
+#+END_SRC
+
+Los pasos que sigue la función son:
+
+1. Aplicamos un filtro Gaussiano a la imagen. Esto lo hacemos debido a que la
+   operación Laplaciana es sensible a ruido en la imagen.
+2. Calculamos los kernels de las derivadas de segundo orden con respecto a ~x~ e
+   ~y~ del tamaño indicado.
+3. Calculamos la convolución con cada uno de dichos kernels y los sumanos.
+   Aplicamos un valor absoluto ya que también queremos mostrar los valores
+   mínimos.
+4. No necesitamos multilplicar por $\sigma ^2$ ya que las máscaras de la
+   gaussiana se encuentran normalizadas.
+
+El filtro de Laplaciana-de-Gaussiana nos permite buscar bordes en una imagen
+para ello, cuando se produce un cambio, dará un valor negativo en el lado más
+iluminado y un valor positivo en el menos iluminado.
+
+El tamaño influirá tanto en el suavizado de la imagen como en el tamaño de las
+máscaras de derivadas, donde provocará una mejor detección de bordes.
+
+En la función ~ejemplo_laplaciana~ podemos comparar los resultados de utilizar
+diferentes tamaños, sigmas y tipos de bordes. Figuras [[fig:l1]], [[fig:l2]] y [[fig:l3]].
+
+#+Caption: \sigma = 3 Tamaño 3 vs Tamaño 5
+#+label: fig:l1
+[[./samples/ejemplo_laplaciana1.png]]
+
+#+Caption: \sigma = 3 Tamaño 3, Borde constante vs Borde Reflejado
+#+label: fig:l2
+[[./samples/ejemplo_laplaciana2.png]]
+
+#+Caption: Tamaño 7, \sigma = 1 vs \sigma = 3
+#+label: fig:l3
+[[./samples/ejemplo_laplaciana3.png]]
+
+Podemos observar lo siguiente:
++ Respecto a los bordes, utilizar un borde constante negro, afecta al resultado,
+  haciendolo menos visible. Si probamos con la función de opencv, obtenemos el
+  mismo resultado.
++ Aumentar el tamaño aumenta el tamaño de los bordes detectados.
++ Fijado el tamaño, aumentar el valor de \sigma afecta al grosor de los bordes, aumentándolo y haciendo menos visible el contorno.
+
+** Ejercicio 2
+*** Apartado A
+
+Para hacer la pirámide Gaussiana necesitaremos dos funciones auxiliares.
+- ~blur_and_downsample~. Cogerá una imagen, le aplicará un filtro de alisado
+  Gaussiano y por último se quedará con la mitad de las filas y las columnas.
+  Para hacer esto utilizamos una funcionalidad de ~python~. Dado un vector ~a~,
+  si aplicamos ~a[::n]~, nos quedaremos con 1 de cada ~n~ elementos del vector.
+
+- ~blur_and_upsample~. Esta función nos permitirá reconstruir la imagen cuando
+  tengamos la pirámide Laplaciana. Usamos ~cv2.resize~ con el flag
+  ~cv2.INTER_NEAREST~ para que la función no aplique ningún alisado sobre la
+  imagen. Luego aplicamos un filtro Gaussiano para suavizar.
+
+
+Ya podemos declarar la función que nos construirá la pirámide Gaussiana. Esta
+función hará llamadas a ~blur_and_downsample~ las veces que indique el
+tamaño de la pirámide.
+Luego pegaremos las imágenes de forma que queden como hemos visto en las
+transparencias.\\
+
+La utilidad de esta pirámide es mostrar distintas imágenes que nos permiten
+simular que nos estamos alejando de la imagen principal.\\
+
+La función devuelve tanto la imagen de la pirámide como un vector con cada uno
+de los integrantes.
+
+#+BEGIN_SRC python
+def piramide_gaussiana(img, s = 1, size = 4):
+    res = []
+    aux = img
+    for i in range(0, size):
+        aux = blur_and_downsample(aux, s)
+        res.append(aux)
+
+    return (hstack([img, vstack(res)]), res)
+#+END_SRC
+
+Veamos varios ejemplos de ejecución con distintos bordes y parámetros (función ~ejemplo_piramide_g~). Figuras
+[[fig:pg1]], [[fig:pg2]] y [[fig:pg3]].
+
+#+Caption: Borde constante \sigma = 0.8
+#+label: fig:pg1
+[[./samples/ejemplo_piramide_g1.png]]
+#+Caption: Borde replicado \sigma = 0.8
+#+label: fig:pg2
+[[./samples/ejemplo_piramide_g2.png]]
+#+Caption: Borde replicado \sigma = 2
+#+label: fig:pg3
+[[./samples/ejemplo_piramide_g3.png]]
+
+
+En estos podemos observar que utilizar un borde constante afecta a la pirámide,
+haciendo que este se replique en cada uno de los niveles de esta. Haciendo
+además que en cada nivel el borde sea mayor.
+También podemos ver que al utilizar \sigma = 0.8, aumenta la nitidez de las
+imágenes pequeñas con respecto a utilizar \sigma = 2. Como el objetivo es
+mantener la nitidez de la imagen al disminuirla de tamaño, el parámetro 0.8 es mejor.
+
+*** Apartado B
+
+Para construir la pirámide Laplaciana, declaramos una función que llevará a cabo
+los cálculos de cada uno de los niveles.
+
+Para ello la función aceptará los siguientes parámetros.
+- ~img~. La imagen a la que aplicar los cálculos.
+- ~s~. El valor de \sigma con el que se harán los suavizados en
+  ~blur_and_downsample~ y ~blur_and_upsample~
+
+Definimos una función auxiliar ~laplacian_step~ se encargará de hacer cada
+iteración de la pirámide Laplaciana.
+
+#+BEGIN_SRC python
+def laplacian_step(img ,s):
+    d = blur_and_downsample(img, s)
+    u = blur_and_upsample(d, s, img.shape)
+    return (d, img - u)
+#+END_SRC
+
+La función ~piramide_laplaciana~ llamará a la función ~laplacian_step~ en cada
+ iteración.
+Al final insertamos la imagen del último paso para poder reconstruir la imagen
+ original.\\
+
+ Esta pirámide nos facilita otra forma de codificar una imagen, pudiendo siempre reconstruirla.
+
+Con la función ~ejemplo_piramide_l~ podemos mostrar un caso de ejemplo
+utilizando borde replicado y borde constante. Figuras [[fig:pl1]] y [[fig:pl2]].
+
+#+Caption: Pirámide Laplaciana borde replicado
+#+label: fig:pl1
+[[./samples/ejemplo_piramide_l1.png]]
+
+Al utilizar un borde constante, el borde se ve arrastrado en la pirámide.
+
+#+Caption: Nivel 3 piramide Laplaciana con borde constante.
+#+label: fig:pl2
+#+attr_latex: :width 200px
+[[./samples/ejemplo_piramide_l2.png]]
+
+Vamos a probar ahora a reconstruir la imagen original dadas las de la pirámide
+Laplaciana. Para ello tomamos la ultimá imagen de la pirámide, y en cada
+iteración la aumentamos y le sumamos la imagen de la pirámide correspondiente.
+Esto lo hacemos en la función ~reconstruct_original~ y podemos porbarlo con
+~ejemplo_reconstruir~. Podemos ver los resultados en la figura [[fig:rec]].
+
+#+Caption: Reconstrucción vs Original.
+#+label: fig:rec
+[[./samples/ejemplo_reconstruir.png]]
+
+Para comprobar que de verdad dichas imágenes son iguales, la función imprime por
+pantalla un valor numérico correspondiente a la diferencia mas grande entre sus
+pixeles. Debido a errores de cálculos con flotantes este valor no es 0
+exactamente, si no del orden de 10^-8.
+
+*** Apartado C
+En este apartado se nos pide construir un espacio de escalas Laplaciano, este
+nos permitirá detectar elementos dentro de una imagen. Para
+ello modularizamos la función en 3 funciones.\\
+
+Primero declaramos ~get_neighbours~, que dadas 3 escalas consecutivas y un punto
+de la escala central, nos devuelve los vecinos de dicho punto tanto en la imagen
+central como en las otras dos escalas.\\
+
+
+Luego declaramos la función ~get_local_max~, que dadas 3 escalas consecutivas,
+busca aquellos valores de la escala central que son mayores que sus vecinos.
+También despreciamos aquellos máximos que sean menores de un umbral (0.01). Este umbral
+se ha escogido de forma experimental de forma que se eviten aquellos valores
+generados por ruido en la imagen. \\
+
+#+BEGIN_SRC python
+def escalas(img, s, n, k = 1.2):
+    l = []
+    c = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+    for i in range(0, n+2):
+        l.append(np.square(normalize(laplaciano(img, s*(k**i), tam=7))))
+    for i in range(1, n+1):
+        for item in get_local_max(l[i], l[i-1], l[i+1]):
+            cv2.circle(c, item, int(2*s*s), (0.8*s,0.2*s,0.4*s))
+        s = s*k
+    return c.astype(np.double)
+#+END_SRC
+
+En la función ~escalas~ calculamos todas las escalas de la imagen (calculamos
+n+2 ya que no vamos a buscar máximos en la primera y en la última),  luego
+buscamos los máximos en cada escala utilizando la función anterior.
+Por último añadimos un círculo a la imagen original en aquellos lugares donde hemos
+encontrado máximos. \\
+
+Para que sea facil diferenciar aquellos círculos que se
+corresponden a cada escala, ponemos el radio a 2\sigma^2, y el color del
+círculo (0.8\sigma, 0.2\sigma, 0.4\sigma) de forma que el color varía
+ligeramente conforme cambiamos de escala.
+
+En la función ~ejemplo_escalas~ podemos ver el siguiente ejemplo con 5 escalas
+(Figura [[fig:esc1]]).
+
+#+Caption: Ejemplo espacio de escalas Laplaciano, \sigma_0 = 1, multiplicador 1.2
+#+label: fig:esc1
+[[./samples/ejemplo_escalas.png]]
+
+En la figura [[fig:esc2]] podemos ver el resultado que se obtiene cuando no se
+utiliza el umbral para filtrar los máximos.
+
+
+#+Caption: \sigma_0 = 1, multiplicador 1.2 sin umbral
+#+label: fig:esc2
+[[./samples/ejemplo_escalas_umbral_0.png]]
+
+** Ejercicio 3
+
+Escribimos primero una función que calcule la imagen de frecuencias altas de una
+imagen, la de frecuencias bajas de otra e imprima ambas junto con la híbrida
+resultante.\\
+
+La funcionalidad principal de esta imagen híbrida es que sus
+frecuencias altas pertenecen a una imagen y sus frecuencias bajas a otra. Con
+esto creamos el efecto de que la imagen cambia cuando nos alejamos o acercamos
+de ella.
+
+#+BEGIN_SRC python
+def print_low_high_hybrid(im1, im2, s1, s2):
+    low = normalize(gaussiana(im1, s1))
+    high = im2 - normalize(gaussiana(im2, s2))
+    pintaMI([low, high, low+high], "Low | High | Low+High")
+#+END_SRC
+
+Con la función ~ejemplo_hibrida_bn~ podemos ver tres ejemplos con imágenes en
+blanco y negro. Y con la función ~ejemplo_pirámide_h~ mostramos las pirámides
+Gaussianas correspondientes, que nos permitirán simular que nos alejamos de la
+imagen para ver si se produce el efecto deseado en la imagen híbrida.
+Mostramos en el nombre de cada figura, el valor de \sigma utilizado para las
+frecuencias bajas (\sigma_b) y el valor utilizado para las frecuencias altas
+(\sigma_a). Donde ambos valores se han ajustado de forma experimental.\\
+
+En la imagen híbrida correspondiente a el pez y el submarino, he seleccionado el
+pez para las frecuencias altas debido a que presenta un mayor nivel de detalle y
+sus frecuencias altas muestran mas información.
+
+#+Caption: Imagen híbrida submarino \sigma_b = 3 y pez \sigma_a = 6
+[[./samples/ejemplos_hybrid1.png]]
+
+#+Caption: Pirámide imagen híbrida de pez y submarino.
+[[./samples/ejemplos_piramide_h1.png]]
+
+En la imagen híbrida correspondiente a Marilyn y Einstein, he seleccionado a
+Einstein para las frecuencias altas debido a que los rasgos de la cara y la ropa
+muestran más información en las frecuencias altas.
+
+#+Caption: Imagen híbrida de Marilyn \sigma_b = 3 y Einstein \sigma_a = 9.
+[[./samples/ejemplos_hybrid2.png]]
+
+#+Caption: Pirámide imagen híbrida de Marilyn y Einstein.
+[[./samples/ejemplos_piramide_h2.png]]
+
+En la imagen híbrida correspondiente al perro y el gato, he seleccionado al gato
+para las frecuencias altas debido a que los bigotes del mismo permiten percibir
+con mayor facilidad al gato en la imagen híbrida.
+
+#+Caption: Imagen híbrida perro \sigma_b = 8 y gato \sigma_a = 8
+[[./samples/ejemplos_hybrid3.png]]
+
+#+Caption: Pirámide imagen híbrida de perro y gato.
+[[./samples/ejemplos_piramide_h3.png]]
+
+\FloatBarrier
+
+* Bonus 2
+
+En este bonus se nos pide crear las imágenes híbridas de todas las parejas de
+fotos a color. Las imágenes de Marilyn y Einstein son en blanco y negro, por lo
+que no volvemos a mostrarlas. Todos los parámetros se han escogido mediante
+experimentación.
+La imagen de la que se han cogido las frecuencias altas se ha elegido buscando
+aquella con mayor número de detalles y colores mas fuertes, ya que estos serían
+mas dificil de ocultar en las frecuencias bajas.
+
+#+Caption: Pirámide de imagen híbrida \sigma_b = 8, \sigma_a = 8
+[[./samples/ejemplo_piramide_g_2.png]]
+
+#+Caption: Pirámide de imagen híbrida \sigma_b = 3, \sigma_a = 6
+[[./samples/ejemplo_piramide_g_3.png]]
+
+#+Caption: Pirámide de imagen híbrida \sigma_b = 8, \sigma_a = 8
+[[./samples/ejemplo_piramide_g_4.png]]
+
+#+Caption: Pirámide de imagen híbrida \sigma_b = 7, \sigma_a = 10
+[[./samples/ejemplo_piramide_g_5.png]]
