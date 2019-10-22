@@ -48,8 +48,10 @@ auxiliares que se utilizarán en los distintos ejercicios de la práctica, estas
 - ~vstack.~ Compone un vector de imágenes en vertical y lo devuelve.
 
 * Bonus 1
-En este apartado explicaré como se han construido las funciones encargadas de
-añadir bordes a una imagen y hacer la convolución con kernels 1D y 2D.
+Para este apartado se han construido las funciones encargadas de
+añadir bordes a una imagen, hacer la convolución con 2 kernels 1D y con un
+kernel 2D separable.
+
 ** Función bordes
 
 La función que nos permitirá añadir un borde a una imagen se llama
@@ -94,8 +96,8 @@ def m_convolve(v, k):
 #+END_SRC
 
 *** Convolución por vectores 1D
-Declaramos la función que calculará la convolución de una imagen monobanda. Para
-ello necesitamos los siguientes pámetros:
+Declaramos la función que calculará la convolución de una imagen monobanda con
+dos máscaras 1D. Para ello necesitamos los siguientes pámetros:
 
 - ~img~. La imagen sobre la que aplicar la convolución.
 - ~vx~. El vector de convolución en el eje ~x~.
@@ -127,7 +129,7 @@ def convolucion2D_monobanda(img, vx, vy, border_type = 2, value = 0, manual=Fals
     return img_res[ky:-ky, kx:-kx].astype("float32")
 #+end_src
 
-La funciñón ~convolucion2D~ nos permitirá hacer la
+La función ~convolucion2D~ nos permitirá hacer la
 convolución de una imagen a color, llamando a la anterior sobre cada color de
 la imagen.
 
@@ -174,9 +176,13 @@ def gaussian(x, sig):
     return np.exp(-np.power(x, 2.) / (2 * np.power(sig, 2.)))
 #+END_SRC
 
-Ayudandonos de esta función calculamos los kernels 1D, para ello seguimos los siguientes pasos:
-1. Calculamos aquellos valores enteros en $[-3\sigma, 3\sigma]$.
-2. Insertamos la imagen por la función Gaussiana de estos valores en un vector.
+Ayudándonos de esta función calculamos los kernels 1D, para ello seguimos los
+siguientes pasos:
+1. Calculamos aquellos valores enteros en $[-3\sigma, 3\sigma]$, de esta forma
+   la máscara tiene tamaño impar y casi toda la concentración de probabilidad de
+   la función Gaussiana se encuentra en dicho intervalo.
+2. Las máscara estará compuesta por las evaluaciones de dichos puntos mediante
+   la función gaussiana.
 3. Normalizamos el vector, de forma que la suma de las componentes es 1. Esto
    además nos permitirá no tener que ajustar el resultado de la Laplaciana-de-Gaussiana
    multiplicando por \sigma^2.
@@ -495,7 +501,8 @@ def escalas(img, s, n, k = 1.2):
     return c.astype(np.double)
 #+END_SRC
 
-En la función ~escalas~ calculamos todas las escalas de la imagen (calculamos
+En la función ~escalas~ calculamos todas las escalas, utilizando como
+multiplicador por defecto 1.2 (calculamos
 n+2 ya que no vamos a buscar máximos en la primera y en la última),  luego
 buscamos los máximos en cada escala utilizando la función anterior.
 Por último añadimos un círculo a la imagen original en aquellos lugares donde hemos
@@ -527,17 +534,18 @@ Escribimos primero una función que calcule la imagen de frecuencias altas de un
 imagen, la de frecuencias bajas de otra e imprima ambas junto con la híbrida
 resultante.\\
 
+#+BEGIN_SRC python
+def print_low_high_hybrid(im1, im2, s1, s2):
+    low = gaussiana(im1, s1)
+    high = im2 - gaussiana(im2, s2)
+    pintaMI([low, high, low+high], "Low | High | Low+High")
+#+END_SRC
+
 La funcionalidad principal de esta imagen híbrida es que sus
 frecuencias altas pertenecen a una imagen y sus frecuencias bajas a otra. Con
 esto creamos el efecto de que la imagen cambia cuando nos alejamos o acercamos
 de ella.
 
-#+BEGIN_SRC python
-def print_low_high_hybrid(im1, im2, s1, s2):
-    low = normalize(gaussiana(im1, s1))
-    high = im2 - normalize(gaussiana(im2, s2))
-    pintaMI([low, high, low+high], "Low | High | Low+High")
-#+END_SRC
 
 Con la función ~ejemplo_hibrida_bn~ podemos ver tres ejemplos con imágenes en
 blanco y negro. Y con la función ~ejemplo_pirámide_h~ mostramos las pirámides
@@ -568,7 +576,8 @@ muestran más información en las frecuencias altas.
 [[./samples/ejemplos_piramide_h2.png]]
 
 En la imagen híbrida correspondiente al perro y el gato, he seleccionado al gato
-para las frecuencias altas debido a que los bigotes del mismo permiten percibir
+para las frecuencias altas debido que presenta mayor nivel de detalle en el
+pelaje y ademas los bigotes del mismo permiten percibir
 con mayor facilidad al gato en la imagen híbrida.
 
 #+Caption: Imagen híbrida perro \sigma_b = 8 y gato \sigma_a = 8
@@ -588,6 +597,12 @@ experimentación.
 La imagen de la que se han cogido las frecuencias altas se ha elegido buscando
 aquella con mayor número de detalles y colores mas fuertes, ya que estos serían
 mas dificil de ocultar en las frecuencias bajas.
+
+Las parejas del avión con el pájaro y la bicicleta con la moto, son
+especialmente dificiles de combinar. Esto se debe a que las 4 fotos se
+encuentran sobre un fondo practicamente liso y ninguna de las dos siluetas cubre
+totalmente a la otra. Esto nos lleva a que en la imagen híbrida se pueden llegar
+a distinguir ambas imágenes.
 
 #+Caption: Pirámide de imagen híbrida \sigma_b = 8, \sigma_a = 8
 [[./samples/ejemplo_piramide_g_2.png]]
