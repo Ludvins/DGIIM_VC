@@ -1,0 +1,144 @@
+#+options: toc:nil
+#+BIND: org-latex-image-default-width 0.5\linewidth
+#+TITLE: Filtrado y detección de regiones.
+#+AUTHOR: Luis Antonio Ortega Andrés
+#+LANGUAGE: es
+#+LATEX_HEADER:\setlength{\parindent}{0in}
+#+LATEX_HEADER: \usepackage[margin=0.8in]{geometry}
+#+LATEX_HEADER: \usepackage[spanish]{babel}
+#+LATEX_HEADER: \usepackage{mathtools}
+#+latex_class_options: [11pt]
+#+LaTeX_HEADER: \usepackage[left=1in,top=1in,right=1in,bottom=1.5in]{geometry}
+#+LaTeX_HEADER: \usepackage{palatino}
+#+LaTeX_HEADER: \usepackage{fancyhdr}
+#+LaTeX_HEADER: \usepackage{sectsty}
+#+LaTeX_HEADER: \usepackage{engord}
+#+LaTeX_HEADER: \usepackage{cite}
+#+LaTeX_HEADER: \usepackage{graphicx}
+#+LaTeX_HEADER: \usepackage{setspace}
+#+LaTeX_HEADER: \usepackage[compact]{titlesec}
+#+LaTeX_HEADER: \usepackage[center]{caption}
+#+LaTeX_HEADER: \usepackage{placeins}
+#+LaTeX_HEADER: \usepackage{color}
+#+LaTeX_HEADER: \usepackage{amsmath}
+#+LaTeX_HEADER: \usepackage{pdfpages}
+
+* Pregunta 1
+*Diga en una sola frase cuál cree que es el objetivo principal de la Visión por Computador.*
+
+El uso de técnicas matemáticas y algorítmicas para el tratamiento de imágenes y la obtención de información sobre estas.
+
+*Diga también cuál es la principal propiedad de las imágenes de cara a la creación algoritmos que la procesen.*
+
+La principal propiedad de las imágenes es que las regiones cercanas a un píxel guardan información sobre el mismo. Esto también influye a la hora de tratar con ruido en la imagen.
+
+* Pregunta 2
+
+*Expresar las diferencias y semejanzas entre las operaciones de correlación y convolución. Dar una interpretación de cada una de ellas que en el contexto de uso en visión por computador.*
+
+Ambas operaciones son transformaciones que utilizan la información local de la imagen. Es decir, actualizan el valor de un píxel utilizando el de los píxeles cercanos. Ambas utilizan una matriz cuadrada de orden impar de números reales llamada /máscara/ que define la operación.
+
+Ambas operaciones coinciden cuando la máscara es simétrica y en otro caso, invertir las filas y las columnas de la máscara de una, resulta la mñascara de la otra.
+
+En el contexto de visión por computador, la convolución se utiliza para aplicar filtros a la imagen debido a que tiene mejores propiedades que la correlación (asociativa, conmutativa y bilineal). La correlación se utiliza como un operador de búsqueda de patrones dentro de una imagen, esto se debe a que la correlación de una imagen con un patrón resulta en la misma imagen con dicho patrón más resaltado.
+
+* Pregunta 3
+
+*¿Cuál es la diferencia “esencial” entre el filtro de convolución y el de mediana? Justificar la respuesta.*
+
+La diferencia principal entre ambos filtros es que la mediana no es una función lineal sobre las imágenes. PAra justificar la respuesta, veamos la demostración de que la convolución si lo es y un contra ejemplo para la mediana.
+
+Tomamos una máscara o kernel ~K~, y dos imágenes ~A~ y ~B~. Simbolizamos por \star a la convolución.
+
+$$
+K \star (A + B) = \sum_{u,v} K[u,v] (A + B)(i-u, j-v) = \sum_{u,v} K[u,v] A(i-u, j-v) + \sum_{u,v} K[u,v] B(i-u, j-v)=  \sum_{u,v} K[u,v] A(i-u, j-v) + \sum_{u,v} K[u,v] B(i-u, j-v) = K \star A +  K \star B
+$$
+
+Con esto vemos que la convolución es lineal. Veamos ahora un contra ejemplo de la linealidad de la mediana. Sean $A = [1,2,3]$, $B=[3,2,1]$ y $K$ una máscara mediana de tamaño 3, con bordes a 0.
+
+$$
+K(A) + K(B) = [1, 2, 2] + [2,2,1] = [3,4,3]
+K(A+B) = K([4, 4, 4]) = [4, 4, 4]
+$$
+
+* Pregunta 4
+
+*Identifique el “mecanismo concreto” que usa un filtro de máscara para transformar una imagen.*
+
+El mecanismo concreto que utiliza un filtro de máscara para transformar una imagen es la información local que tiene esta. El valor de un píxel tras aplicar la máscara solo depende de los valores de su entorno en la imagen original. 
+
+* Pregunta 5
+
+*¿De qué depende que una máscara de convolución pueda ser implementada
+por convoluciones 1D? Justificar la respuesta.*
+
+* Pregunta 6
+
+*Identificar las diferencias y consecuencias desde el punto de vista
+teórico y de la implementación entre:*
+
+*a) Primero alisar la imagen y después calcular las derivadas sobre la
+imagen alisada*
+
+*b) Primero calcular las imágenes derivadas y después alisar dichas
+imágenes.*
+
+*Justificar los argumentos.*
+
+* Pregunta 7
+
+*Identifique las funciones de las que podemos extraer pesos correctos
+para implementar de forma eficiente la primera derivada de una imagen.
+Suponer alisamiento Gaussiano.*
+
+* Pregunta 8
+
+*Identifique las funciones de las que podemos extraer pesos correctos
+para implementar de forma eficiente la Laplaciana de una imagen. Suponer
+alisamiento Gaussiano.*
+
+* Pregunta 9
+
+*Suponga que le piden implementar de forma eficiente un algoritmo para
+el cálculo de la derivada de primer orden sobre una imagen usando
+alisamiento Gaussiano. Enumere y explique los pasos necesarios para
+llevarlo a cabo.*
+
+* Pregunta 10
+
+*Identifique semejanzas y diferencias entre la pirámide gaussiana y
+el espacio de escalas de una imagen, ¿cuándo usar una u otra? Justificar
+los argumentos.*
+
+* Pregunta 11
+
+*¿Bajo qué condiciones podemos garantizar una perfecta reconstrucción
+de una imagen a partir de su pirámide Laplaciana? Dar argumentos y
+discutir las opciones que considere necesario.*
+
+* Pregunta 12
+
+*¿Cuáles son las contribuciones más relevantes del algoritmo de
+Canny al cálculo de los contornos sobre una imagen? ¿Existe alguna
+conexión entre las máscaras de Sobel y el algoritmo de Canny? Justificar
+la respuesta.*
+
+* Pregunta 13
+
+*Identificar pros y contras de k-medias como mecanismo para crear un
+vocabulario visual a partir del cual poder caracterizar patrones. ¿Qué
+ganamos y qué perdemos? Justificar los argumentos.*
+
+* Pregunta 14
+
+*Identifique pros y contras del modelo de “Bolsa de Palabras” como
+mecanismo para caracterizar el contenido de una imagen. ¿Qué ganamos y
+que perdemos? Justificar los argumentos.*
+
+* Pregunta 15
+
+*Suponga que dispone de un conjunto de imágenes de dos tipos de
+clases bien diferenciadas. Suponga que conoce como implementar de forma
+eficiente el cálculo de las derivadas hasta el orden N de la imagen.
+Describa como crear un algoritmo que permita diferenciar, con garantías,
+imágenes de ambas clases. Justificar cada uno de los pasos que proponga.*
