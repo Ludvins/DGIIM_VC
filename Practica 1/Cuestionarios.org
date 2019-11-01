@@ -16,7 +16,7 @@
 *Diga en una sola frase cuál cree que es el objetivo principal de la Visión por
 Computador.* \\
 
-El objetivo principal ed la visión por computador es el uso de técnicas
+El objetivo principal de la visión por computador es el uso de técnicas
 matemáticas y algorítmicas para el tratamiento de imágenes y la obtención de información sobre estas. \\
 
 *Diga también cuál es la principal propiedad de las imágenes de cara a la creación algoritmos que la procesen.*\\
@@ -34,7 +34,7 @@ cercanos. Ambas utilizan una matriz cuadrada de orden impar de números reales
 llamada /máscara/ que define la operación.
 
 Las operaciones que las definen son similares. Dada una máscara $K$, y una
-imagen $M$, denotamos $\star$ a la operaciónde la convolución y $\otimes$ a la
+imagen $M$, denotamos $\star$ a la operación de convolución y $\otimes$ a la
 de correlación.
 
 $$
@@ -44,14 +44,11 @@ $$
 H\otimes M [u,v] = \sum_i \sum_j H[u,v]M[u+i, v+j]
 $$
 
-Ambas operaciones modifican cada píxel utilizando una suma ponderada de los
-píxeles de su alrededor.
-
 Ambas operaciones coinciden cuando la máscara es simétrica y en otro caso, invertir las filas y las columnas de la máscara de una, resulta la mascara de la otra.
 
 En el contexto de visión por computador, la convolución se utiliza para aplicar
-filtros a la imagen debido a que tiene mejores propiedades que la correlación
-(asociativa, conmutativa y bilineal). La correlación se utiliza como un operador
+filtros a la imagen debido a que tiene mejores propiedades que la correlación,
+algunas de estas son ser asociativa, conmutativa y bilineal. La correlación se utiliza como un operador
 de búsqueda de patrones dentro de una imagen, esto se debe a que al hacer la
 correlación de una imagen con un patrón obtendremos respuestas altas en aquellas
 zonas de la imagen que sean similares a dicho patrón.
@@ -61,20 +58,19 @@ zonas de la imagen que sean similares a dicho patrón.
 *¿Cuál es la diferencia “esencial” entre el filtro de convolución y el de
 mediana? Justificar la respuesta.*\\
 
-La diferencia principal entre ambos filtros es que la mediana no es una función lineal sobre las imágenes. PAra justificar la respuesta, veamos la demostración de que la convolución si lo es y un contra ejemplo para la mediana.
+La diferencia principal entre ambos filtros es que la mediana no es una función lineal sobre las imágenes. Para justificar la respuesta, veamos la demostración de que la convolución si lo es y un contraejemplo para la mediana.
 
-Tomamos una máscara o kernel $K$, dos imágenes $A$ y $B$ y una constante $a$. Simbolizamos por
-\star a la convolución.
+Tomamos una máscara o kernel $K$, dos imágenes $A$ y $B$ y una constante $a$.
 
 \[\begin{aligned}
-K \star (aA + B) &= \sum_{u,v} K[u,v] (aA + B)(i-u, j-v) = \sum_{u,v}a K[u,v]
-A(i-u, j-v) + \sum_{u,v} K[u,v] B(i-u, j-v) \\
-&=  a\sum_{u,v} K[u,v] A(i-u, j-v) +
-\sum_{u,v} K[u,v] B(i-u, j-v) = a(K \star A) +  K \star B
+K \star (aA + B) &= \sum_{u,v} K[u,v] (aA + B)[i-u, j-u] = \sum_{u,v}a K[u,v]
+A[i-u, j-v] + \sum_{u,v} K[u,v] B[i-u, j-v] \\
+&=  a\sum_{u,v} K[u,v] A[i-u, j-v] +
+\sum_{u,v} K[u,v] B[i-u, j-v] = a(K \star A) +  K \star B
 \end{aligned}\]
 
 
-Con esto vemos que la convolución es lineal. Veamos ahora un contra ejemplo de la linealidad de la mediana. Sean $A = [1,2,3], B=[3,2,1]$ y $K$ una máscara mediana de tamaño 3, con bordes a 0.
+Con esto vemos que la convolución es lineal. Veamos ahora un contraejemplo de la linealidad de la mediana. Sean $A = [1,2,3], B=[3,2,1]$ y $K$ una máscara mediana de tamaño 3, con bordes a 0.
 
 $$K(A) + K(B) = [1, 2, 2] + [2,2,1] = [3,4,3]$$
 $$K(A+B) = K([4, 4, 4]) = [4, 4, 4]$$
@@ -93,21 +89,24 @@ cantidad de vecinos que intervienen en el cálculo viene dado por el tamaño de 
 *¿De qué depende que una máscara de convolución pueda ser implementada
 por convoluciones 1D? Justificar la respuesta.*\\
 
-Para que una máscara de convolución 2D $A$ de dimensiones $n\times m $, se pueda implementar mediante
+Para que una máscara $A$ de convolución 2D de dimensiones $n\times m$, se pueda implementar mediante
 convoluciones 1D, esta se debe poder descomponer en dos vectores de la forma $A
 = a_1 a_2^T$, con $a_1 \in \mathbb{R}^n$ y $a_2 \in \mathbb{R}^m$.
 
 $$(A\star B)[u,v] = \sum_i \sum_j A[i,j]B[u-i, v-j] = \sum_i \sum_j
 a_1[i]a_2^T[j]B[u-i, v-j] = \sum_i a_1[i] \sum_j a_2^T[j]B[u-i, v-j] $$
 
-Veamos que esto sólo ocurre cuando el rango de la matriz A es 1.
+Veamos entonces que la condición necesaria y suficiente para que esto ocurra es
+que el rango de la matriz $A$ sea 1.\\
 
-Supongamos que  la matriz A es separable, $\exists u,v$ tal que $A = uv^T$.
-Entonces $Ax = uv^T x = \langle x, v\rangle u$, donde $\langle x, v\rangle$ es un escalar. Luego la dimensión
-de la imagen de A es 1, rango$(A)=1$.
+Supongamos que  la matriz A es separable, es decir, $\exists u,v$ tal que $A =
+uv^T$. Veamos $A$ como una aplicación $A: \mathbb{R}^m \to \mathbb{R}^n$.
+Consistente en multiplicar el vector por la derecha.\\
+Entonces $A(x) = uv^T x = \langle x, v\rangle u$, donde $\langle x, v\rangle \in
+\mathbb{R} \implies \ dimIm(A)=1 \implies \ rango(A)=1$.
 
-Asumamos ahora que el rango de la matriz A es 1, entonces $\exists v$ tal que
-$\forall u$ $Au = kv$ con k un escalar. En particular esto ocurre para los
+Asumamos ahora que el rango de la matriz A es 1, entonces $\exists v \in \mathbb{R}^n$ tal que
+$\forall u\in \mathbb{R}^m \ \exists k \in \mathbb{R}$ que cumple $A(u) = Au = kv$. En particular esto ocurre para los
 vectores de la base usual. Esto implica que las columnas de A son proporcionales
 a $v \implies \exists w$ tal que $A = vw^T$
 
@@ -119,7 +118,6 @@ pasos:
 3. Realizamos el producto de $u$ y $w$ resultando una matriz proporcional a la
    original.
 4. Dividimos uno de los dos vectores entre dicha constante de proporcionalidad.
-
 
 
 * Pregunta 6
@@ -136,28 +134,28 @@ operaciones, debido a que la operación es conmutativa.
 \[X \star Y = \sum_{u,v} X[u,v]Y[a-u, b-v] = \sum_{u,v} X[a-u,b-v]Y[u,v] =
 Y\star X\]
 
-Entonces, sea $G$ un filtro de alisado, $D$ una derivada y $A$ una imagen.
+Entonces, sea $G$ un filtro de alisado, $D$ una máscara de derivada y $A$ una imagen.
 
 \[G \star (D \star A) = D \star (G \star A)\]
 
 Sin embargo, en el caso práctico, ambas soluciones pueden no dar el
-mismo resultado debido a errores de redondeo o el tipo de borde utilizado.
-Además, es preferible realizar el alisado antes de aproximar las derivadas, ya
-que si hacemos el alisamiento despues, tendremos que hacerlo 2 veces (una para
-cada derivada parcial).
-
+mismo resultado debido a errores de redondeo o el tipo de borde utilizado.\\
+Cuantas más operaciones se realicen, más estaremos sujetos a este tipo de fallos,
+por lo tanto, es preferible realizar el alisado antes de aproximar las
+derivadas, ya que si primero calculamos las derivadas, luego tendremos que
+alisar cada una de ellas.
 
 * Pregunta 7
 
 *Identifique las funciones de las que podemos extraer pesos correctos para implementar de forma eficiente la primera derivada de una imagen. Suponer alisamiento Gaussiano.*\\
 
 En el caso de estar calculando la primera derivada con respecto de $x$, la
-funcion de la que podemos extraer pesos correctos para implementarlo de forma
+función de la que podemos extraer pesos correctos para implementarlo de forma
 eficiente es:
 
 $$
-F(x,y) = f_1(x) f_2(y) \text{    con    } f_1(x)=\frac{-x}{\sigma^2}g(x, \sigma)
-\text{,    } f_2(y) = g(y, \sigma)
+F(x,y) = f_1(x) f_2(y) \text{    con    } f_1(x)=\frac{-x}{\sigma_x^2}g_{\sigma_x}(x)
+\text{,    } f_2(y) = g_{\sigma_y}(y)
 $$
 Donde
 
@@ -168,7 +166,7 @@ Siendo análogo para la derivada respecto de $y$.\\
 
 Para ver esto, utilizamos la respuesta del apartado anterior. Queremos realizar primero el
 alisamiento y luego realizar la derivada. Además, buscamos que el filtro
-resultante sea separable, de forma que se pueda convolucionar por filasy por
+resultante sea separable, de forma que se pueda convolucionar por filas y por
 columnas. Sea $G$ el filtro
 Gaussiano y $M$ nuestra imagen.
 
@@ -188,7 +186,8 @@ e^{\frac{-y^2}{2\sigma_y^2}} = g_{\sigma_x}(x)g_{\sigma_y}(y)
 \]
 
 
-Calculamos ahora la derivada de esta función.
+Como vemos, es una función separable, de forma que sus parciales también lo
+serán. Las calculamos.
 
 \[
 \frac{\partial g_{\sigma}}{\partial x}(x) = \frac{-2x}{2\sigma^2} \frac{1}{\sqrt{2\pi} \sigma}
@@ -202,12 +201,11 @@ Si derivamos en la expresión de la Gaussiana de 2 variables.
 \[ \frac{\partial g}{\partial y} (x, y) = g_{\sigma_x}(x)g_{\sigma_y}'(y) =
 g_{\sigma_x}(x) \frac{-y}{\sigma^2}g_{\sigma_y}(y)\]
 
-
 * Pregunta 8
 
-*Identifique las funciones de las que podemos extraer pesos correctos para implementar de forma eficiente la Laplaciana de una imagen. Suponer alisamiento Gaussiano.*
+*Identifique las funciones de las que podemos extraer pesos correctos para implementar de forma eficiente la Laplaciana de una imagen. Suponer alisamiento Gaussiano.* \\
 
-Dada una imagen $M$, consideramos su laplaciano
+Dada una imagen $M$, consideramos su Laplaciano
 $$
 \Delta (M) = \frac{\partial^2}{\partial x^2}M + \frac{\partial^2}{\partial y^2}M
 $$
@@ -216,19 +214,18 @@ segundas derivadas de $g(x,y)$.
 
 $$
  \frac{\partial^2}{\partial x^2} g(x,y) =  \frac{\partial}{\partial x}\Big(
- \frac{\partial}{\partial x} g(x,y) \Big) = \frac{x^2-\sigma ^2}{\sigma
- ^4}g(x,y) = \frac{x^2-\sigma ^2}{\sigma
+ \frac{\partial}{\partial x} g(x,y) \Big) = \frac{x^2-\sigma_x ^2}{\sigma_x
+ ^4}g(x,y) = \frac{x^2-\sigma_x ^2}{\sigma_x
  ^4}g_{\sigma_x}(x)g_{\sigma_y}(y)
 $$
 $$
  \frac{\partial^2}{\partial y^2} g(x,y) =  \frac{\partial}{\partial y}\Big(
- \frac{\partial}{\partial y} g(x,y) \Big) = \frac{y^2-\sigma ^2}{\sigma ^4}g(x,y) = \frac{y^2-\sigma ^2}{\sigma ^4}g_{\sigma_x}(x)g_{\sigma_y}(y)
+ \frac{\partial}{\partial y} g(x,y) \Big) = \frac{y^2-\sigma_y ^2}{\sigma_y ^4}g(x,y) = \frac{y^2-\sigma_y ^2}{\sigma_y ^4}g_{\sigma_x}(x)g_{\sigma_y}(y)
 $$
 
 Por lo tanto, aunque el operador Laplaciano no sea separable, las segundas
-derivadas si lo son, asique podemos extraer los pesos de cada una de ellas de forma eficiente.
-
-
+derivadas si lo son, asique podemos extraer los pesos de cada una de ellas de
+forma eficiente. Luego calculamos el Laplaciano sumando los resultados.
 
 
 * Pregunta 9
@@ -240,27 +237,25 @@ parámetros que lo determinan (\sigma_x, \sigma_y) o como una matriz directament
 (ya sea separada en 2 máscaras 1D o una máscara 2D).
 
 En el caso de tener el filtro a partir de sus parámetros, utilizamos la
-expresión separable del filtro gaussiano y muestreamos en puntos equiespaciados.
+expresión separable del filtro Gaussiano y muestreamos en puntos equi-espaciados.
 Los pasos serían:
 
-1. Calcular el tamaño que tendran las máscaras 1D. Para ello buscamos que gran
+1. Calcular el tamaño que tendrán las máscaras 1D. Para ello buscamos que gran
    parte de la densidad de la función Gaussiana quede dentro. Para esto tomamos
    el intervalo [-3\sigma, 3\sigma]. El cual contiene mas del 99% de la
    densidad.
 2. Calculamos los valores de las máscaras a partir de la expresión de la
    derivada del Ejercicio 7.
-3. Normalizamos el filtro multiplicando por \sigma. En las prácticas, el filtro
-   gaussiano se calculó normalizado, de forma que no era necesario este paso.
+3. Normalizamos el filtro multiplicando por \sigma.
 4. Aplicar las máscaras 1D con una convolución a la imagen.
 
 En caso de tener el filtro Gaussiano en forma de matriz 2D o como 2 vectores 1D,
-debemos calcular un nuevo filtro. Para lograr esto se puede utilizar una máscara
+debemos calcular un nuevo filtro. Para lograr esto se puede utilizar una máscara de
 Sobel. Los pasos serían:
 
-1. Realizamos la convolución de los filtros Gaussianos y de los de derivadas.
+1. Realizamos la convolución de los filtros Gaussianos y los de derivadas.
 2. Normalizamos el filtro multiplicando por \sigma.
 3. Convolucionamos los filtros por filas y columnas con la imagen.
-
 
 * Pregunta 10
 
@@ -268,7 +263,7 @@ Sobel. Los pasos serían:
 de escalas de una imagen, ¿cuándo usar una u otra? Justificar los argumentos.*\\
 
 Ambos métodos nos permiten identificar elementos dentro de una imagen, para ello
-construyen modelos multi-escala de la misma, aunque no los utilizan de la misma forma.
+construyen modelos multi-escala de la misma, aunque no lo utilizan de la misma forma.\\
 
 La pirámide Gaussiana permite visualizar la imagen en distintos tamaños, para
 ello hace uso de filtros de alisado (perdiendo las frecuencias altas),
@@ -276,8 +271,15 @@ permitiendo obtener varias representaciones de la misma imagen con distinto
 nivel de detalle. El
 espacio de escalas emplea filtros de Laplaciana-de-Gaussiana para construir
 distintas "escalas" (no las muestra) que utiliza para encontrar elementos en la
-imagen (en forma de máximos locales).
+imagen (en forma de máximos locales entre las escalas).\\
 
+Si queremos detectar características o patrones en una imagen dependiendo del
+nivel de detalle, o reducir su tamaño evitando el "aliasing", debemos utilizar
+una pirámide Gaussiana.\\
+
+En cambio, si queremos detectar elementos y regiones en la imagen, debemos
+utilizar un espacio de escalas junto con un algoritmo de supresión de no-máximos
+para evitar el ruido presente en la imagen.
 
 * Pregunta 11
 
@@ -289,13 +291,12 @@ Para hacerlo, debemos aplicar el algoritmo inverso al de la construcción de la
 pirámide Laplaciana.
 
 Dada la pirámide Laplaciana de una imagen $\{L_1,...,L_n\}$, donde L_n
-corresponde con el nivel más bajo de la pirámide Gaussiana ($\{G_1,..G_n\}$) utilizada para
-construir la Laplaciana. Sabemos que $L_n = G_n$. Además, $L_i = G_i - f(G_i+1)$
+corresponde con el nivel más bajo de la pirámide Gaussiana $\{G_1,..G_n\}$ utilizada para
+construir la Laplaciana, $L_n = G_n$. Además, $L_i = G_i - f(G_{i+1})$
 donde $f$ corresponde a la función que aumenta el tamaño de la imagen.
 
-Despejando tenemos $G_i = L_i + f(G_i+1)$, luego podemos reconstruir la imagen
+Despejando tenemos $G_i = L_i + f(G_{i+1})$, luego podemos reconstruir la imagen
 original $G_1$.
-
 
 
 * Pregunta 12
@@ -321,29 +322,30 @@ Para cumplir estos criterios el algoritmo de Canny realiza los siguientes pasos:
    con valor por encima del umbral alto y continua añadiendo puntos si son
    mayores al umbral bajo.
 
-En el algoritmo de Canny podemos obtener el gradiente con las máscaras de Sobel.
+Debido a que las máscaras de Sobel calculan una aproximación del gradiente de la
+imagen en cada punto, en el algoritmo de Canny podemos obtener el gradiente utilizandolas.
 OpenCV realiza esta operación por defecto.
 
 * Pregunta 13
 
 *Identificar pros y contras de k-medias como mecanismo para crear un vocabulario visual a partir del cual poder caracterizar patrones. ¿Qué ganamos y qué perdemos? Justificar los argumentos.*\\
 
-El método k-medias nos permite encontrar grupos de características similares y poder determinar un representante para cada uno de los grupos que van a ser cada una de nuestras palabras visuales.
-Debemos partir de un conjunto de imagenes que deben ser suficientemente
-representativas del tipo de imagenes que queremos representar.
+El método k-medias para construir un vocabulario visual nos permite encontrar
+grupos de características similares, es decir, realizar un "clustering" de los
+elementos de la imagen.
 
 Algunas ventajas de este método son:
 + Es reliativamente sencillo de implementar.
-+ Escala bien a conjunto de datos grandes.
-+ Garantiza convergencia.
++ Escala bien a conjuntos de datos grandes.
 + Se adapta con facilidad a nuevos ejemplos.
-+ Generaliza a "clusters" de diferentes formas y tamaños
 
 Algunas de sus desventajas son:
 
-+ Requiere fijar el valor de "k" manualmente.
-+ Alta dependencia de los valores iniciales.
-+ No escala correctamente con el número de dimensiones.
++ Requiere fijar el valor de "k" manualmente. Este parámetro se debe encontrar
+  mediante experimentación y en caso de no ser apropiado, puede dar malos resultados.
++ Intenta crear "clusters" de tamaño y forma similar, independientemente de como
+  estén distribuidos los datos.
++ Puede caer en óptimos locales.
 
 * Pregunta 14
 
@@ -353,7 +355,10 @@ para caracterizar el contenido de una imagen. ¿Qué ganamos y que perdemos? Jus
 El modelo "Bolsa de Palabras" nos permite representar la imagen como un único
 vector de "palabras". Para ello se vale de un "vocabulario" previamente
 definido, que corresponderá con una serie de características que queremos buscar
-en la imagen, y tiene en cuenta no solo que "palabras" de dicho vocabulario aparecen
+en la imagen. Luego necesitaremos algún algoritmo que detecte dichas regiones en
+la imagen, por ejemplo, el algoritmo k-medias.\\
+
+El modelo no solo tiene en cuenta que "palabras" de dicho vocabulario aparecen
 en la imagen, si no cuántas veces lo hacen.
 
 Entre sus ventajas se encuentran:
@@ -361,23 +366,41 @@ Entre sus ventajas se encuentran:
   sensibildiad al ruido y favorece la discriminación.
 + Permite representar la imagen en un único vector de forma compacta y
   eficiente.
++ La detección de regiones es no depende de la escala o la orientación.
 
 Desventajas de este modelo son las siguientes:
 + Es necesario construir un vocabulario de palabras visuales.
 + El modelo no tiene en cuenta la localización de las características. Se pierde
-  la información espacial de las mismas.
-
+  la información espacial de las mismas, lo cual puede ser clave a la hora de
+  analizar la imagen.
++ Como utiliza el algoritmo k-medias, está sujeto a las mismas desventajas que este.
 
 * Pregunta 15
 
-*Suponga que dispone de un conjunto de imágenes de dos tipos de clases bien diferenciadas. Suponga que conoce como implementar de forma eficiente el cálculo
-de las derivadas hasta el orden N de la imagen. Describa como crear un algoritmo que permita diferenciar, con garantías, imágenes de ambas clases.Justificar cada uno de los pasos que proponga.*\\
+*Suponga que dispone de un conjunto de imágenes de dos tipos de clases bien diferenciadas.*
+*Suponga que conoce como implementar de forma eficiente el cálculo de las derivadas hasta el orden N de la imagen. Describa como crear un algoritmo
+que permita diferenciar, con garantías, imágenes de ambas clases.*
+*Justificar cada uno de los pasos que proponga.*\\
 
-* Bibliografia
+Para cada una de las imágenes de las que disponemos su clasificación, seguimos la siguiente estrategia:
+
+1. Utilizar el algoritmo SIFT, para extraer elementos de la imagen. Aquí es
+   donde aprovechamos el cálculo eficiente de las derivadas.
+2. Utilizar el algoritmo "k-medias" para agrupar los elementos y construir el "vocabulario" visual.
+3. Utilizamos el modelo de la "Bolsa de Palabras" y almacenamos el vector de "palabras" junto
+   con la clase a la que pertenece la imagen.
+
+Para cada imagen que queramos clasificar, realizamos los mismos pasos y a la
+hora de decidir a que clase pertenece, buscamos a su vecino más cercano.
+
+* Bibliografía
 
 1. Canny Edge Detector - Wikipedia.\\
    https://en.wikipedia.org/wiki/Canny_edge_detector
 2. Bolsa de Palabras - Wikipedia. \\
    https://en.wikipedia.org/wiki/Bag-of-words_model
 3. K-Means -  Google Developers. \\
-   https://developers.google.com/machine-learning/\clustering/algorithm/advantages-disadvantages
+   [[https://developers.google.com/machine-learning/clustering/algorithm/advantages-disadvantages][https://developers.google.com/machine-learning/]]\\
+   [[https://developers.google.com/machine-learning/clustering/algorithm/advantages-disadvantages][clustering/algorithm/advantages-disadvantages]]
+4. SIFT - Wikipedia.\\
+   https://en.wikipedia.org/wiki/Scale-invariant_feature_transform
