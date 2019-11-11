@@ -1,3 +1,4 @@
 *.pdf
 *.tex
 .vscode/settings.json
+Practica 2/.*
